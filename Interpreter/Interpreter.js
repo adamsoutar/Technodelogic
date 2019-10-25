@@ -1,3 +1,5 @@
+const readlineSync = require('readline-sync')
+
 class Interpreter {
   constructor (ast) {
     this.ast = ast
@@ -9,12 +11,8 @@ class Interpreter {
     this.breakStack = []
     // Used to emulate blocking input
     this.inputStack = []
-    this.setupStdin()
-  }
 
-  setupStdin () {
-    const stdin = process.openStdin()
-    stdin.addListener('data', data => this.inputStack.push)
+    console.dir(this.ast)
   }
 
   runToEnd () {
@@ -33,11 +31,13 @@ class Interpreter {
   }
 
   croak (msg, source = 'Interpreter') {
-    throw new Error(`${source} croaked: ${msg}`)
+    throw new Error(`${source} croaked: ${msg}
+At AST node:
+${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
   }
 
   interpretExpression (exp = this.lastExpression) {
-    if (!this.lastExpression) {
+    if (!exp) {
       this.croak('Called something like print without a previously evaluated expression')
     }
 
@@ -84,8 +84,9 @@ class Interpreter {
   }
 
   readLine () {
-    while (this.inputStack.length < 1) {}
-    return this.inputStack.shift()
+    // TODO: Get rid of this dependency/sort out better input
+    //       it blocks background promises etc
+    return readlineSync.question('>')
   }
 
   // Use 'acceptJam' for accepting a jump to else
@@ -116,14 +117,14 @@ class Interpreter {
     if (invertCond) cond === 0 ? 1 : 0
 
     if (cond === 0) {
-      this.insPointer = this.getIndexOfNextBreak(false)
+      this.insPointer = this.getIndexOfNextBreak(false) + 1
     } else {
-      this.insPointer += 2
       // Entered loop
       this.breakStack.push({
         type: 'loop',
-        fromLine: this.insPointer
+        fromLine: this.insPointer - 1
       })
+      this.insPointer += 2
     }
   }
 
@@ -143,6 +144,8 @@ class Interpreter {
   }
 
   interpretKeyword (k) {
+    //console.log(`Evaluating keyword ${k}, pointer: ${this.insPointer}`)
+
     switch (k) {
       case 'print':
         process.stdout.write(
@@ -202,7 +205,7 @@ class Interpreter {
       case 'break':
         var brk = this.breakStack.pop()
         if (brk.type === 'loop') {
-          this.insPointer = brk.fromLine - 1
+          this.insPointer = brk.fromLine
         }
         break
       case 'leave':
@@ -213,7 +216,7 @@ class Interpreter {
 
           var brk = this.breakStack.pop()
           if (brk.type === 'loop') {
-            this.insPointer = brk.fromLine - 1
+            this.insPointer = brk.fromLine
             break
           }
         }

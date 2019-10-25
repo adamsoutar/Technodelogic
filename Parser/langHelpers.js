@@ -4,7 +4,6 @@ const identifierChars = letters.concat(numbers)
 const meaningless = ['it', 'quick', 'mail']
 const punctuation = '()'.split('')
 
-const operators = ['touch', 'trash', 'cross', 'cut', 'crack', 'rip', 'turn']
 const digits = ['erase', 'click', 'watch', 'view', 'work', 'surf', 'update', 'upgrade', 'zoom', 'fill', 'point']
 
 const binaryOperators = {
@@ -16,12 +15,14 @@ const binaryOperators = {
   rip: '%',
   drag: '==',
   pay: '<',
+  buy: '<',
   charge: '>'
 }
 const unaryOperators = {
   turn: '-',
   switch: '!'
 }
+const operators = Object.keys(binaryOperators).concat(Object.keys(unaryOperators))
 
 const keywords = `
 name rename write drag and drop
@@ -34,7 +35,6 @@ name rename write drag and drop
 const synonyms = [
   ['fix', 'tune'],
   ['jam', 'snap'],
-  ['pay', 'buy'],
   ['write', 'rewrite'],
   ['check', 'rate']
 ]
