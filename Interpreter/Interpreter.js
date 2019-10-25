@@ -6,6 +6,7 @@ class Interpreter {
     this.stack = []
     this.insPointer = 0
 
+    this.breakStack = []
     // Used to emulate blocking input
     this.inputStack = []
     this.setupStdin()
@@ -87,6 +88,60 @@ class Interpreter {
     return this.inputStack.shift()
   }
 
+  // Use 'acceptJam' for accepting a jump to else
+  getIndexOfNextBreak (acceptElse) {
+    // Gives the index of the next 'break it'
+    let breakOffset = 0
+
+    for (let i = this.insPointer; i < this.ast.length; i++) {
+      const node = this.ast[i]
+
+      if (node.value === 'check') breakOffset++
+      if (node.value === 'fix') breakOffset--
+
+      if (
+        node.value === 'break' ||
+        (node.value === 'jam' || node.value === 'fix' && acceptElse)
+      ) {
+        if (breakOffset == 0) {
+          return i
+        } else breakOffset--
+      }
+    }
+    this.croak("Couldn't find a matching 'break it' statement")
+  }
+
+  whileIshLoop (invertCond) {
+    var cond = this.interpretExpression(this.ast[this.insPointer + 1])
+    if (invertCond) cond === 0 ? 1 : 0
+
+    if (cond === 0) {
+      this.insPointer = this.getIndexOfNextBreak(false)
+    } else {
+      this.insPointer += 2
+      // Entered loop
+      this.breakStack.push({
+        type: 'loop',
+        fromLine: this.insPointer
+      })
+    }
+  }
+
+  getIndexOfNthLabel (n) {
+    if (n === 0) return this.ast.length
+
+    let found = 0
+    for (let i = 0; i < this.ast.length; i++) {
+      const node = this.ast[n]
+      if (node.type === 'label') {
+        found++
+        if (found === n) return i
+      }
+    }
+
+    this.croak(`Attempted a 'technologic' jump to label ${n}, but it's too high`)
+  }
+
   interpretKeyword (k) {
     switch (k) {
       case 'print':
@@ -96,6 +151,9 @@ class Interpreter {
         break
       case 'send':
         process.stdout.write(this.interpretExpression())
+        break
+      case 'scroll':
+        process.stdout.write('\n')
         break
       case 'save':
         this.stack.push(this.interpretExpression())
@@ -115,8 +173,57 @@ class Interpreter {
         var vr = this.getNextNode()
         this.variables[vr.value] = this.readLine().charCodeAt(0)
         break
+      case 'burn':
+        this.insPointer = this.ast.length
+        break
+      case 'check': // The if statement kind
+        var cond = this.interpretExpression()
+        if (cond === 0) {
+          this.insPointer = this.getIndexOfNextBreak(true)
+        } else {
+          // Entering if statement
+          this.breakStack.push({
+            type: 'if'
+          })
+        }
+        break
+      case 'fix':
+        // I don't *think* this needs any real implementation other than to
+        // not trip on the keyword and treat it like a regular if
+        break
+      case 'lock':
+        // While loop
+        this.whileIshLoop(false)
+        break
+      case 'start':
+        // Until-ish loop
+        this.whileIshLoop(true)
+        break
+      case 'break':
+        var brk = this.breakStack.pop()
+        if (brk.type === 'loop') {
+          this.insPointer = brk.fromLine - 1
+        }
+        break
+      case 'leave':
+        while (true) {
+          if (this.breakStack.length === 0) {
+            this.croak("You called 'leave', but the loop stack is empty.")
+          }
+
+          var brk = this.breakStack.pop()
+          if (brk.type === 'loop') {
+            this.insPointer = brk.fromLine - 1
+            break
+          }
+        }
+        break
+      case 'find':
+        var id = this.interpretExpression()
+        this.insPointer = this.getIndexOfNthLabel(id)
+        break
       default:
-          this.croak(`Unimplemented keyword ${k}`)
+          this.croak(`Unimplemented keyword "${k}"`)
     }
   }
 }
