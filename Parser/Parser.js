@@ -37,14 +37,14 @@ class Parser {
 
     if (token.type === 'digit') {
       // Let's assemble a number!
-      let n = token.value
+      let n = `${token.value}`
       while (!this.tokenStream.endOfStream && this.tokenStream.peek().type === 'digit') {
-        n *= 10
-        n += this.tokenStream.read().value
+        const val = this.tokenStream.read().value
+        n += val === 10 ? '.' : val
       }
       return {
         type: 'number',
-        value: n
+        value: parseFloat(n)
       }
     }
 

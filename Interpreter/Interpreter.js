@@ -5,11 +5,20 @@ class Interpreter {
     this.variables = {}
     this.stack = []
     this.insPointer = 0
+
+    // Used to emulate blocking input
+    this.inputStack = []
+    this.setupStdin()
+  }
+
+  setupStdin () {
+    const stdin = process.openStdin()
+    stdin.addListener('data', data => this.inputStack.push)
   }
 
   runToEnd () {
     while (this.insPointer < this.ast.length) {
-      const node = this.ast[i]
+      const node = this.getNextNode()
 
       if (['number', 'binary', 'variable'].includes(node.type)) {
         this.lastExpression = node
@@ -18,16 +27,15 @@ class Interpreter {
       if (node.type === 'keyword') {
         this.interpretKeyword(node.value)
       }
-
-      this.insPointer++
     }
+    process.exit(0)
   }
 
   croak (msg, source = 'Interpreter') {
     throw new Error(`${source} croaked: ${msg}`)
   }
 
-  interpretExpression (exp) {
+  interpretExpression (exp = this.lastExpression) {
     if (!this.lastExpression) {
       this.croak('Called something like print without a previously evaluated expression')
     }
@@ -58,25 +66,58 @@ class Interpreter {
         return Math.floor(left / right)
       case '%':
         return left % right
+
+      // Boolean operators
+      // But everything's numbers, so I assume this works like C?
+      case '==':
+        return (left === right) ? 1 : 0
+      case '<':
+        return (left < right) ? 1 : 0
+      case '>':
+        return (left > right) ? 1 : 0
     }
+  }
+
+  getNextNode () {
+    return this.ast[this.insPointer++]
+  }
+
+  readLine () {
+    while (this.inputStack.length < 1) {}
+    return this.inputStack.shift()
   }
 
   interpretKeyword (k) {
     switch (k) {
       case 'print':
         process.stdout.write(
-          String.fromCharCode(this.interpretExpression(this.lastExpression))
+          String.fromCharCode(this.interpretExpression())
         )
         break
+      case 'send':
+        process.stdout.write(this.interpretExpression())
+        break
       case 'save':
-        this.stack.push(this.interpretExpression(this.lastExpression))
+        this.stack.push(this.interpretExpression())
         break
       case 'load':
         this.stack.pop()
         break
+      case 'write':
+        var vr = this.getNextNode()
+        this.variables[vr.value] = this.interpretExpression()
+        break
+      case 'scan':
+        var vr = this.getNextNode()
+        this.variables[vr.value] = this.readLine()
+        break
+      case 'press':
+        var vr = this.getNextNode()
+        this.variables[vr.value] = this.readLine().charCodeAt(0)
+        break
+      default:
+          this.croak(`Unimplemented keyword ${k}`)
     }
-
-    this.croak(`Unimplemented keyword ${k}`)
   }
 }
 

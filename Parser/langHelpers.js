@@ -13,7 +13,10 @@ const binaryOperators = {
   cross: '*',
   cut: '/f',
   crack: '/i',
-  rip: '%'
+  rip: '%',
+  drag: '==',
+  pay: '<',
+  charge: '>'
 }
 const unaryOperators = {
   turn: '-',
