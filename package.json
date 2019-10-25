@@ -1,0 +1,14 @@
+{
+  "name": "technologicesolang",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "standard"
+  },
+  "author": "Adam Soutar",
+  "license": "MIT",
+  "devDependencies": {
+    "standard": "^14.3.1"
+  }
+}
