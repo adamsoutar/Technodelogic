@@ -48,10 +48,12 @@ class Parser {
       }
     }
 
-    // The keyword AST node is the token verbatum
-    if (token.type === 'keyword') return token
+    // The keyword AST node for these is the token verbatum
+    if (token.type === 'keyword' || token.type === 'label') {
+      return token
+    }
 
-    this.croak('(Possible) variable reference without "name", "rename"')
+    this.croak(`(Possible) variable reference without "name", "rename": "${token.value}"`)
   }
 
   parseExpression () {
