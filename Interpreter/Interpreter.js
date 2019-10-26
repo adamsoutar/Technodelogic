@@ -9,8 +9,6 @@ class Interpreter {
     this.insPointer = 0
 
     this.breakStack = []
-    // Used to emulate blocking input
-    this.inputStack = []
 
     console.dir(this.ast)
   }
@@ -50,6 +48,7 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
         return this.interpretBinary(exp)
     }
   }
+
   interpretBinary (bin) {
     const left = this.interpretExpression(bin.left)
     const right = this.interpretExpression(bin.right)
@@ -102,9 +101,9 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
 
       if (
         node.value === 'break' ||
-        (node.value === 'jam' || node.value === 'fix' && acceptElse)
+        ((node.value === 'jam' || node.value === 'fix') && acceptElse)
       ) {
-        if (breakOffset == 0) {
+        if (breakOffset === 0) {
           return i
         } else breakOffset--
       }
@@ -113,8 +112,8 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
   }
 
   whileIshLoop (invertCond) {
-    var cond = this.interpretExpression(this.ast[this.insPointer + 1])
-    if (invertCond) cond === 0 ? 1 : 0
+    var cond = this.interpretExpression(this.ast[this.insPointer])
+    if (invertCond) cond = cond === 0 ? 1 : 0
 
     if (cond === 0) {
       this.insPointer = this.getIndexOfNextBreak(false) + 1
@@ -144,7 +143,7 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
   }
 
   interpretKeyword (k) {
-    //console.log(`Evaluating keyword ${k}, pointer: ${this.insPointer}`)
+    // console.log(`Evaluating ${this.insPointer - 1}: ${k}`)
 
     switch (k) {
       case 'print':
@@ -165,16 +164,16 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
         this.stack.pop()
         break
       case 'write':
-        var vr = this.getNextNode()
-        this.variables[vr.value] = this.interpretExpression()
+        var vr1 = this.getNextNode()
+        this.variables[vr1.value] = this.interpretExpression()
         break
       case 'scan':
-        var vr = this.getNextNode()
-        this.variables[vr.value] = this.readLine()
+        var vr2 = this.getNextNode()
+        this.variables[vr2.value] = this.readLine()
         break
       case 'press':
-        var vr = this.getNextNode()
-        this.variables[vr.value] = this.readLine().charCodeAt(0)
+        var vr3 = this.getNextNode()
+        this.variables[vr3.value] = this.readLine().charCodeAt(0)
         break
       case 'burn':
         this.insPointer = this.ast.length
@@ -214,9 +213,9 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
             this.croak("You called 'leave', but the loop stack is empty.")
           }
 
-          var brk = this.breakStack.pop()
-          if (brk.type === 'loop') {
-            this.insPointer = brk.fromLine
+          const brk2 = this.breakStack.pop()
+          if (brk2.type === 'loop') {
+            this.insPointer = brk2.fromLine
             break
           }
         }
@@ -226,7 +225,7 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
         this.insPointer = this.getIndexOfNthLabel(id)
         break
       default:
-          this.croak(`Unimplemented keyword "${k}"`)
+        this.croak(`Unimplemented keyword "${k}"`)
     }
   }
 }
