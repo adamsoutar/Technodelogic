@@ -15,7 +15,7 @@ class Interpreter {
     while (this.insPointer < this.ast.length) {
       const node = this.getNextNode()
 
-      if (['number', 'binary', 'variable'].includes(node.type)) {
+      if (['number', 'binary', 'unary', 'variable'].includes(node.type)) {
         this.lastExpression = node
       }
 
@@ -44,6 +44,19 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
         return this.variables[exp.value]
       case 'binary':
         return this.interpretBinary(exp)
+      case 'unary':
+        return this.interpretUnary(exp)
+    }
+  }
+
+  interpretUnary (una) {
+    const node = this.interpretExpression(una.node)
+
+    switch (una.operator) {
+      case '-':
+        return -node
+      case '!':
+        return node === 0 ? 1 : 0
     }
   }
 
@@ -171,7 +184,7 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
         )
         break
       case 'send':
-        process.stdout.write(this.interpretExpression())
+        process.stdout.write(this.interpretExpression().toString())
         break
       case 'scroll':
         process.stdout.write('\n')

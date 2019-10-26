@@ -20,7 +20,7 @@ class Parser {
       this.tokenStream.read()
       const exp = this.parseExpression()
       this.expectNextWord('unzip')
-      return exp
+      return this.mightBeUnary(exp)
     }
 
     if (this.isNextWord('name')) {
@@ -57,13 +57,25 @@ class Parser {
   }
 
   parseExpression () {
-    const exp = this.mightBeBinary(this.parseAtom(), 0)
+    const exp = this.mightBeUnary(this.mightBeBinary(this.parseAtom(), 0))
     // Expressions are ended with 'format it'
     // but we don't care, we can detect it with or without
     if (this.isNextWord('format')) {
       this.tokenStream.read()
     }
     return exp
+  }
+
+  mightBeUnary (node) {
+    if (this.isNextOperator(false)) {
+      const op = this.tokenStream.read()
+      return {
+        type: 'unary',
+        operator: op.value,
+        node
+      }
+    }
+    return node
   }
 
   mightBeBinary (leftNode, myPrecedence) {
