@@ -22,7 +22,7 @@ class TokenStream {
       }
     }
 
-    const word = this.getNextWord()
+    const word = langHelpers.replaceSynonym(this.getNextWord())
 
     // Filler words like quick- and it
     if (langHelpers.isWordMeaningless(word)) {

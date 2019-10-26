@@ -39,11 +39,14 @@ const synonyms = [
   ['check', 'rate']
 ]
 
-function isKeyword (w) {
+function replaceSynonym (w) {
   // Replace synonyms
   for (const s of synonyms) {
-    if (w === s[1]) w = s[0]
+    if (w === s[1]) return s[0]
   }
+  return w
+}
+function isKeyword (w) {
   return keywords.includes(w)
 }
 function isVariableName (w) {
@@ -64,5 +67,6 @@ module.exports = {
   isDigit: (w) => digits.includes(w),
   isBinaryOperator: (w) => Object.keys(binaryOperators).includes(w),
   isKeyword,
-  isVariableName
+  isVariableName,
+  replaceSynonym
 }

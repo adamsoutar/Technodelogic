@@ -8,8 +8,6 @@ class Interpreter {
     this.stack = []
     this.insPointer = 0
 
-    this.breakStack = []
-
     console.dir(this.ast)
   }
 
@@ -119,10 +117,6 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
       this.insPointer = this.getIndexOfNextBreak(false) + 1
     } else {
       // Entered loop
-      this.breakStack.push({
-        type: 'loop',
-        fromLine: this.insPointer - 1
-      })
       this.insPointer += 2
     }
   }
@@ -140,6 +134,31 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
     }
 
     this.croak(`Attempted a 'technologic' jump to label ${n}, but it's too high`)
+  }
+
+  handleBreak (acceptIfs) {
+    for (let i = this.insPointer - 2; i >= 0; i--) {
+      const node = this.ast[i]
+
+      if (node.value === 'check') {
+        // Both loops & and ifs use 'check', we have to see if this is a loop
+        // (unless we're at the start - edge case)
+        if (i < 2) return i
+        const prevNode = this.ast[i - 2]
+        if (prevNode.value === 'lock' || prevNode.value === 'start') {
+          // It's a loop
+          this.insPointer = i - 2
+          return
+        } else {
+          // It's an if statement
+          if (!acceptIfs) continue
+          this.insPointer = i
+          return
+        }
+      }
+    }
+
+    this.croak("Hit 'break it' without a previous 'check it'")
   }
 
   interpretKeyword (k) {
@@ -182,11 +201,6 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
         var cond = this.interpretExpression()
         if (cond === 0) {
           this.insPointer = this.getIndexOfNextBreak(true)
-        } else {
-          // Entering if statement
-          this.breakStack.push({
-            type: 'if'
-          })
         }
         break
       case 'fix':
@@ -202,23 +216,10 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
         this.whileIshLoop(true)
         break
       case 'break':
-        var brk = this.breakStack.pop()
-        if (brk.type === 'loop') {
-          this.insPointer = brk.fromLine
-        }
+        this.handleBreak(true)
         break
       case 'leave':
-        while (true) {
-          if (this.breakStack.length === 0) {
-            this.croak("You called 'leave', but the loop stack is empty.")
-          }
-
-          const brk2 = this.breakStack.pop()
-          if (brk2.type === 'loop') {
-            this.insPointer = brk2.fromLine
-            break
-          }
-        }
+        this.handleBreak(false)
         break
       case 'find':
         var id = this.interpretExpression()
