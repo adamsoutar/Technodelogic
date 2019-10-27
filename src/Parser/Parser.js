@@ -1,5 +1,10 @@
 const DummyTokenStream = require('./DummyTokenStream')
 const parserHelpers = require('./parserHelpers')
+const util = require('util')
+
+function stringFullObject (obj) {
+  return util.inspect(obj, { depth: null, colors: true })
+}
 
 class Parser {
   constructor (tokenStream) {
@@ -86,7 +91,7 @@ class Parser {
     }
   }
 
-  parseAtom (inArgumentList = false) {
+  parseAtom () {
     if (this.isNextWord('zip')) {
       // Bracketed expression like (2 + 3) * 4
       this.tokenStream.read()
@@ -143,6 +148,19 @@ class Parser {
       }
     }
 
+    if (
+      token.type === 'keyword' &&
+      parserHelpers.isVarSetter(token.value)
+    ) {
+      const obj2 = {
+        ...token,
+        // Read the raw identifier
+        sets: this.tokenStream.read().rawIdentifier
+      }
+      console.log(obj2)
+      return obj2
+    }
+
     // The keyword AST node for these is the token verbatum
     if (
       token.type === 'keyword' ||
@@ -152,21 +170,15 @@ class Parser {
       return token
     }
 
-    if (inArgumentList) {
-      return {
-        type: 'argumentVariable',
-        value: token.value
-      }
-    }
-    this.croak(`Unexpected identifier "${token.value}"
+    this.croak(`Unexpected token "${token.rawIdentifier}"
 If you are referencing a variable, it must be in the format
-  name it, ${token.value}, rename it`)
+${stringFullObject(token)}`)
   }
 
-  parseExpression (inArgumentList = false) {
+  parseExpression () {
     const exp = this.mightBeUnary(
       this.mightBeBinary(
-        this.parseAtom(inArgumentList), 0
+        this.parseAtom(), 0
       )
     )
     // Expressions are ended with 'format it'

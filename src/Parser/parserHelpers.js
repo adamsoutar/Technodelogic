@@ -10,7 +10,9 @@ const operatorPrecedence = {
   '/f': 25, // Float division
   '/i': 25 // Integer (floor) division
 }
+const varSetters = ['write', 'scan', 'press']
 
 module.exports = {
-  operatorPrecedence
+  operatorPrecedence,
+  isVarSetter: (w) => varSetters.includes(w)
 }

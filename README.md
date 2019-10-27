@@ -39,6 +39,8 @@ limited to:
 
 #### Cat
 
+Takes in a single character at a time and prints it
+
 ```
 start it, name it, code, rename it
 buy it, click, format it, rate it
@@ -51,6 +53,8 @@ technologic
 ```
 
 #### Hello World
+
+I wonder what this one does
 
 ```
 quick - upgrade it, watch it, mail it
@@ -74,25 +78,17 @@ view it, quick - format it, print it
 technologic
 ```
 
-#### Fibonnaci
+#### Functions example
+
+ - Defines a function called add
+ - Calls it with 1 and 2 as arguments
+ - Prints 3 as a result ("send scroll")
 
 ```
-use it, buy it, bring it, fax it
-touch it, code it, name it, buy it
-quick - rename it, pay it, watch it
-quick - format it, check it, name it
-buy, rename it, mail, unlock it
-break it, use it, name it, buy it
-mail, rename it, trash it, click it
-quick - format it, bring it, fax it
-touch it, call it, touch it, use it
-name it, buy, rename it, trash it
-watch it, mail, format it, bring it
-fax it, touch it, call, unlock it
-break it, scan it, name it, buy it
-quick - rename it, use it, name it
-buy, rename it, quick - format it
-fax it, touch it, call it, send it
+use it buy it bring it pay it bring it add code it
+  name it buy it rename it touch name it pay it rename it unlock it
+break it
 
-technologic
+use it click plug it watch plug it add call it
+send scroll
 ```

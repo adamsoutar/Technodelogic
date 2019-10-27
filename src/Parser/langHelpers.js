@@ -63,7 +63,7 @@ module.exports = {
   unaryOperators,
   isWhitespace: (x) => ' \r\n\t,-'.includes(x),
   isIdentifier: (x) => identifierChars.includes(x),
-  
+
   isWordMeaningless: (w) => meaningless.includes(w),
   isOperator: (w) => operators.includes(w),
   isDigit: (w) => digits.includes(w),

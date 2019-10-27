@@ -36,7 +36,7 @@ class Interpreter {
     }
 
     if (node.type === 'keyword') {
-      this.interpretKeyword(node.value)
+      this.interpretKeyword(node.value, node.sets)
     }
 
     if (node.type === 'functionDefinition') {
@@ -362,7 +362,7 @@ ${stringFullObject(this.ast[this.insPointer - 1])}`)
     }
   }
 
-  interpretKeyword (k) {
+  interpretKeyword (k, sets = '') {
     switch (k) {
       case 'print':
         process.stdout.write(
@@ -385,17 +385,15 @@ ${stringFullObject(this.ast[this.insPointer - 1])}`)
         var nxt = this.interpretExpression(this.getNextNode())
         this.setStackItem(nxt, this.interpretExpression())
         break
+      // The next 3 are setters
       case 'write':
-        var vr1 = this.getNextNode()
-        this.setVariable(vr1.rawIdentifier, this.interpretExpression())
+        this.setVariable(sets, this.interpretExpression())
         break
       case 'scan':
-        var vr2 = this.getNextNode()
-        this.setVariable(vr2.rawIdentifier, this.readLine())
+        this.setVariable(sets, this.readLine())
         break
       case 'press':
-        var vr3 = this.getNextNode()
-        this.setVariable(vr3.rawIdentifier, this.readLine().charCodeAt(0))
+        this.setVariable(sets, this.readLine().charCodeAt(0))
         break
       case 'burn':
         this.insPointer = this.ast.length
