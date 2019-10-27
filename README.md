@@ -24,7 +24,7 @@ cd technodelogic/src
 node index.js myCode.tl
 ```
 
-## Implementation features
+## Implementation features
 
 Tech-node-logic supports **every** feature of Technologic. Including, but not
 limited to:
