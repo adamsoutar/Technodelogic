@@ -48,7 +48,7 @@ class TokenStream {
     }
 
     if (langHelpers.isDigit(word)) {
-      // Keep trying to interpret a number
+      // Parser will stitch these into numbers
       return {
         type: 'digit',
         value: langHelpers.digits.indexOf(word)

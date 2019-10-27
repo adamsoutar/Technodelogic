@@ -27,7 +27,8 @@ class Parser {
       this.tokenStream.read()
       const varToken = this.tokenStream.read()
       if (varToken.type !== 'variable') {
-        this.croak('"name it" must be followed by a variable identifier')
+        this.croak(`"name it" must be followed by a variable identifier
+This might be because the value you used ("${varToken.value}") is a reserved keyword`)
       }
       this.expectNextWord('rename')
       return varToken
@@ -57,7 +58,9 @@ class Parser {
       return token
     }
 
-    this.croak(`(Possible) variable reference without "name", "rename": "${token.value}"`)
+    this.croak(`Unexpected identifier "${token.value}"
+If you are referencing a variable, it must be in the format
+  name it, ${token.value}, rename it`)
   }
 
   parseExpression () {

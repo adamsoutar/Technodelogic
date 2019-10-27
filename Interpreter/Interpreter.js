@@ -7,6 +7,7 @@ class Interpreter {
     this.variables = {}
     this.stack = []
     this.insPointer = 0
+    this.callStack = []
 
     console.dir(this.ast)
   }
@@ -110,7 +111,7 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
     return readlineSync.question('>')
   }
 
-  // Use 'acceptJam' for accepting a jump to else
+  // Use 'acceptElse' for accepting a jump to else
   getIndexOfNextBreak (acceptElse) {
     // Gives the index of the next 'break it'
     let breakOffset = 0
@@ -118,7 +119,7 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
     for (let i = this.insPointer; i < this.ast.length; i++) {
       const node = this.ast[i]
 
-      if (node.value === 'check') breakOffset++
+      if (node.value === 'check' || node.value === 'code') breakOffset++
       if (node.value === 'fix') breakOffset--
 
       if (
@@ -161,10 +162,17 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
   }
 
   handleBreak (acceptIfs) {
+    let ignores = 0
     for (let i = this.insPointer - 2; i >= 0; i--) {
       const node = this.ast[i]
 
+      if (node.value === 'break') ignores++
+
       if (node.value === 'check') {
+        if (ignores > 0) {
+          ignores--
+          continue
+        }
         // Both loops & and ifs use 'check', we have to see if this is a loop
         // (unless we're at the start - edge case)
         if (i < 2) return i
@@ -180,9 +188,24 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
           return
         }
       }
+
+      if (node.value === 'code') {
+        if (ignores > 0) {
+          ignores--
+          continue
+        }
+        // Hit break at the end of a function,
+        // Need to return
+        this.doReturn()
+      }
     }
 
     this.croak("Hit 'break it' without a previous 'check it'")
+  }
+
+  doReturn () {
+    // Todo, allow return value
+    this.insPointer = this.callStack.pop() + 1
   }
 
   setStackItem (n, value) {

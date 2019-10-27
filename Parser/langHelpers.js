@@ -31,7 +31,7 @@ name rename write drag and drop
  jam fix lock start leave burn
  find save load paste change
  scan press send print scroll format
- zip unzip
+ zip unzip use code call
 `.replace(/\n/g, '').split(' ')
 const synonyms = [
   ['fix', 'tune'],
