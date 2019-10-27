@@ -86,6 +86,12 @@ class TokenStream {
         value: word
       }
     }
+    if (langHelpers.isExpressionKeyword(word)) {
+      return {
+        type: 'expressionKeyword',
+        value: word
+      }
+    }
 
     // Because the tokeniser doesn't know where is appropriate
     // to write a var name, we must assume all unknown words in the

@@ -46,6 +46,15 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
         return this.interpretBinary(exp)
       case 'unary':
         return this.interpretUnary(exp)
+      case 'expressionKeyword':
+        // They had to come up with a special type of keyword and use it once
+        // in the entire spec, didn't they
+        // Currently the only one is 'fax', so that's what's "hard-coded" here,
+        // but it's easy to account for new ones
+        if (exp.value !== 'fax') {
+          this.croak('Unimplemented expression keyword')
+        }
+        return this.stack.pop()
     }
   }
 
@@ -58,7 +67,7 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
       case '!':
         return node === 0 ? 1 : 0
       case 'paste':
-        return STRATEGIC_SYNTAX_ERROR_TO_REMIND_ME_TO_FINISH_THIS
+        return this.setStackItem(node)
     }
   }
 
@@ -176,6 +185,15 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
     this.croak("Hit 'break it' without a previous 'check it'")
   }
 
+  setStackItem (n, value) {
+    if (n < 0 || n >= this.stack.length) {
+      this.croak('Attempted to write to a non-existant stack index')
+    }
+
+    // The stack is indexed from the top being 0
+    this.stack[this.stack.length - 1 - n] = value
+  }
+
   interpretKeyword (k) {
     // console.log(`Evaluating ${this.insPointer - 1}: ${k}`)
 
@@ -196,6 +214,10 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
         break
       case 'load':
         this.stack.pop()
+        break
+      case 'change':
+        var nxt = this.interpretExpression(this.getNextNode())
+        this.setStackItem(nxt, this.interpretExpression())
         break
       case 'write':
         var vr1 = this.getNextNode()

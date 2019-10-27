@@ -29,7 +29,7 @@ const keywords = `
 name rename write drag and drop
  pay charge switch check break
  jam fix lock start leave burn
- find save load fax paste change
+ find save load paste change
  scan press send print scroll format
  zip unzip
 `.replace(/\n/g, '').split(' ')
@@ -39,6 +39,8 @@ const synonyms = [
   ['write', 'rewrite'],
   ['check', 'rate']
 ]
+
+const expressionKeywords = ['fax']
 
 function replaceSynonym (w) {
   // Replace synonyms
@@ -67,6 +69,7 @@ module.exports = {
   isOperator: (w) => operators.includes(w),
   isDigit: (w) => digits.includes(w),
   isBinaryOperator: (w) => Object.keys(binaryOperators).includes(w),
+  isExpressionKeyword: (w) => expressionKeywords.includes(w),
   isKeyword,
   isVariableName,
   replaceSynonym

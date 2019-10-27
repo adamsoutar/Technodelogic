@@ -49,7 +49,11 @@ class Parser {
     }
 
     // The keyword AST node for these is the token verbatum
-    if (token.type === 'keyword' || token.type === 'label') {
+    if (
+      token.type === 'keyword' ||
+      token.type === 'label' ||
+      token.type === 'expressionKeyword'
+    ) {
       return token
     }
 
