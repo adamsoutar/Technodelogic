@@ -14,13 +14,66 @@ class Parser {
     return ast
   }
 
-  parseAtom () {
+  isNextPunctuation (val) {
+    const token = this.tokenStream.peek()
+    return (token.type === 'punctuation' && token.value === val)
+  }
+
+  expectPunctuation (x) {
+    if (!this.isNextPunctuation(x)) {
+      this.croak(`Expected punctuation ${x}, got ${this.tokenStream.peek().value}`)
+    }
+    this.tokenStream.read()
+  }
+
+  parseArgumentList () {
+    const args = []
+    while (!this.isNextPunctuation(')')) {
+      args.push(this.parseExpression(true))
+      // Optional seperators
+      if (this.isNextWord('bring') || this.isNextWord('plug')) {
+        this.tokenStream.read()
+      }
+    }
+    this.tokenStream.read()
+    return args
+  }
+
+  parseAtom (inArgumentList = false) {
     if (this.isNextWord('zip')) {
       // Bracketed expression like (2 + 3) * 4
       this.tokenStream.read()
       const exp = this.parseExpression()
       this.expectNextWord('unzip')
       return this.mightBeUnary(exp)
+    }
+
+    if (this.isNextWord('use')) {
+      // Function definition or call
+      this.tokenStream.read()
+      this.expectPunctuation('(')
+      const args = this.parseArgumentList()
+      const name = this.tokenStream.read()
+      if (name.type !== 'variable') {
+        this.croak(`Function name must be a valid identifier, you used:\n${name}`)
+      }
+
+      let type = ''
+
+      if (this.isNextWord('code')) {
+        type = 'functionDefinition'
+      } else if (this.isNextWord('call')) {
+        type = 'functionCall'
+      } else {
+        this.croak('Function line ("use it, (args...) name") must be followed by "call it" or "code it"')
+      }
+      this.tokenStream.read()
+
+      return {
+        type,
+        args,
+        name: name.value
+      }
     }
 
     if (this.isNextWord('name')) {
@@ -58,13 +111,23 @@ This might be because the value you used ("${varToken.value}") is a reserved key
       return token
     }
 
+    if (inArgumentList) {
+      return {
+        type: 'argumentVariable',
+        value: token.value
+      }
+    }
     this.croak(`Unexpected identifier "${token.value}"
 If you are referencing a variable, it must be in the format
   name it, ${token.value}, rename it`)
   }
 
-  parseExpression () {
-    const exp = this.mightBeUnary(this.mightBeBinary(this.parseAtom(), 0))
+  parseExpression (inArgumentList = false) {
+    const exp = this.mightBeUnary(
+      this.mightBeBinary(
+        this.parseAtom(inArgumentList), 0
+      )
+    )
     // Expressions are ended with 'format it'
     // but we don't care, we can detect it with or without
     if (this.isNextWord('format')) {

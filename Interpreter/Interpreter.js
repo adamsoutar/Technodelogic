@@ -1,48 +1,135 @@
+const util = require('util')
 const readlineSync = require('readline-sync')
+
+function stringFullObject (obj) {
+  return util.inspect(obj, { depth: null, colors: true })
+}
 
 class Interpreter {
   constructor (ast) {
     this.ast = ast
     this.lastExpression = null
-    this.variables = {}
+    this.globals = {}
     this.stack = []
     this.insPointer = 0
     this.callStack = []
+    this.definedFunctions = {}
+    this.lastReturnValue = 0
 
-    console.dir(this.ast)
+    console.log(stringFullObject(this.ast))
   }
 
   runToEnd () {
     while (this.insPointer < this.ast.length) {
-      const node = this.getNextNode()
-
-      if (['number', 'binary', 'unary', 'variable'].includes(node.type)) {
-        this.lastExpression = node
-      }
-
-      if (node.type === 'keyword') {
-        this.interpretKeyword(node.value)
-      }
+      this.handleNextNode()
     }
     process.exit(0)
+  }
+
+  handleNextNode () {
+    // console.log(`Eval node ${this.insPointer}`)
+    const node = this.getNextNode()
+
+    // Expression
+    if (['number', 'binary', 'unary', 'variable', 'functionCall'].includes(node.type)) {
+      this.lastExpression = this.interpretExpression(node)
+    }
+
+    if (node.type === 'keyword') {
+      this.interpretKeyword(node.value)
+    }
+
+    if (node.type === 'functionDefinition') {
+      this.definedFunctions[node.name] = {
+        astIndex: this.insPointer - 1,
+        // Used to determine whether technologic jumps are legal
+        // (you can't jump in/out of a function for scope reasons)
+        endsAt: this.getIndexOfNextBreak(false),
+        args: node.args
+      }
+      this.insPointer = this.getIndexOfNextBreak(false) + 1
+    }
+  }
+
+  handleFunctionCall (node) {
+    // console.log(`Function call ${stringFullObject(node)}`)
+
+    if (!Object.keys(this.definedFunctions).includes(node.name)) {
+      this.croak(`Attempted to call function "${node.name}" before it was defined`)
+    }
+
+    const func = this.definedFunctions[node.name]
+    if (func.args.length !== node.args.length) {
+      this.croak(`Called "${node.name}" with ${node.args.length} arguments when it wanted ${func.args.length}`)
+    }
+
+    // Construct scope from arguments
+    const scope = {}
+    for (let i = 0; i < func.args.length; i++) {
+      scope[func.args[i].value] = this.interpretExpression(node.args[i])
+    }
+
+    this.callStack.push({
+      calledFrom: this.insPointer - 1,
+      scope
+    })
+    const sL = this.callStack.length
+    this.insPointer = func.astIndex + 1
+
+    // Run until this function returns to get its result
+    while (this.callStack.length === sL) {
+      this.handleNextNode()
+    }
+    return this.lastReturnValue
   }
 
   croak (msg, source = 'Interpreter') {
     throw new Error(`${source} croaked: ${msg}
 At AST node:
-${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
+${stringFullObject(this.ast[this.insPointer - 1])}`)
   }
 
-  interpretExpression (exp = this.lastExpression) {
-    if (!exp) {
-      this.croak('Called something like print without a previously evaluated expression')
+  getScope () {
+    // Call stack holds scope
+    if (this.callStack.length > 0) {
+      const { scope } = this.callStack[this.callStack.length - 1]
+      return scope
+    }
+    return {}
+  }
+
+  isInScope (varName) {
+    return Object.keys(this.getScope()).includes(varName)
+  }
+
+  getVariable (varName) {
+    if (this.isInScope(varName)) {
+      const scope = this.getScope()
+      return scope[varName]
+    }
+    return this.globals[varName]
+  }
+
+  setVariable (varName, value) {
+    if (this.isInScope(varName)) {
+      this.callStack[this.callStack.length - 1].scope[varName] = value
+    }
+    this.globals[varName] = value
+  }
+
+  interpretExpression (exp = -1) {
+    if (exp === -1) {
+      if (!this.lastExpression) {
+        this.croak('Called something like print without a previously evaluated expression')
+      }
+      return this.lastExpression
     }
 
     switch (exp.type) {
       case 'number':
         return exp.value
       case 'variable':
-        return this.variables[exp.value]
+        return this.getVariable(exp.value)
       case 'binary':
         return this.interpretBinary(exp)
       case 'unary':
@@ -56,7 +143,11 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
           this.croak('Unimplemented expression keyword')
         }
         return this.stack.pop()
+      case 'functionCall':
+        return this.handleFunctionCall(exp)
     }
+
+    this.croak(`Unimplemented expression type "${exp.type}"`)
   }
 
   interpretUnary (una) {
@@ -69,6 +160,8 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
         return node === 0 ? 1 : 0
       case 'paste':
         return this.setStackItem(node)
+      case 'return':
+        this.doReturn(node)
     }
   }
 
@@ -119,7 +212,10 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
     for (let i = this.insPointer; i < this.ast.length; i++) {
       const node = this.ast[i]
 
-      if (node.value === 'check' || node.value === 'code') breakOffset++
+      if (
+        node.value === 'check' ||
+        node.value === 'functionDefinition'
+      ) breakOffset++
       if (node.value === 'fix') breakOffset--
 
       if (
@@ -189,23 +285,23 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
         }
       }
 
-      if (node.value === 'code') {
+      if (node.value === 'functionDefinition') {
         if (ignores > 0) {
           ignores--
           continue
         }
         // Hit break at the end of a function,
         // Need to return
-        this.doReturn()
+        this.doReturn(0)
       }
     }
 
     this.croak("Hit 'break it' without a previous 'check it'")
   }
 
-  doReturn () {
-    // Todo, allow return value
-    this.insPointer = this.callStack.pop() + 1
+  doReturn (value) {
+    this.lastReturnValue = value
+    this.insPointer = this.callStack.pop().calledFrom + 1
   }
 
   setStackItem (n, value) {
@@ -218,8 +314,6 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
   }
 
   interpretKeyword (k) {
-    // console.log(`Evaluating ${this.insPointer - 1}: ${k}`)
-
     switch (k) {
       case 'print':
         process.stdout.write(
@@ -244,15 +338,15 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
         break
       case 'write':
         var vr1 = this.getNextNode()
-        this.variables[vr1.value] = this.interpretExpression()
+        this.setVariable(vr1.value, this.interpretExpression())
         break
       case 'scan':
         var vr2 = this.getNextNode()
-        this.variables[vr2.value] = this.readLine()
+        this.setVariable(vr2.value, this.readLine())
         break
       case 'press':
         var vr3 = this.getNextNode()
-        this.variables[vr3.value] = this.readLine().charCodeAt(0)
+        this.setVariable(vr3.value, this.readLine().charCodeAt(0))
         break
       case 'burn':
         this.insPointer = this.ast.length

@@ -2,10 +2,11 @@
 const interpreter = require('./Interpreter')
 const interpreterInstance = interpreter.fromString(`
   use it, (a, bring it, b, bring it) add, code it
-    a touch it b, unlock it
+    name it a rename it touch it name it b rename it, unlock it
   break it
 
-  use it, (3, plug it, 2 plug it) add call it
+  use it, (view, plug it, watch plug it) add call it
+  send it
 
   technologic
 `)

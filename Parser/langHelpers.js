@@ -21,7 +21,8 @@ const binaryOperators = {
 const unaryOperators = {
   turn: '-',
   switch: '!',
-  paste: 'paste' // Special stack-related "unary operator"
+  paste: 'paste', // Special stack-related "unary operator"
+  unlock: 'return'
 }
 const operators = Object.keys(binaryOperators).concat(Object.keys(unaryOperators))
 
@@ -31,7 +32,7 @@ name rename write drag and drop
  jam fix lock start leave burn
  find save load paste change
  scan press send print scroll format
- zip unzip use code call
+ zip unzip use code call bring plug
 `.replace(/\n/g, '').split(' ')
 const synonyms = [
   ['fix', 'tune'],
