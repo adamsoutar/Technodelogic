@@ -70,6 +70,7 @@ class Interpreter {
     }
 
     this.callStack.push({
+      name: node.name,
       calledFrom: this.insPointer - 1,
       scope
     })
@@ -119,7 +120,7 @@ ${stringFullObject(this.ast[this.insPointer - 1])}`)
 
   interpretExpression (exp = -1) {
     if (exp === -1) {
-      if (!this.lastExpression) {
+      if (this.lastExpression == null) {
         this.croak('Called something like print without a previously evaluated expression')
       }
       return this.lastExpression
@@ -247,7 +248,7 @@ ${stringFullObject(this.ast[this.insPointer - 1])}`)
 
     let found = 0
     for (let i = 0; i < this.ast.length; i++) {
-      const node = this.ast[n]
+      const node = this.ast[i]
       if (node.type === 'label') {
         found++
         if (found === n) return i
@@ -311,6 +312,54 @@ ${stringFullObject(this.ast[this.insPointer - 1])}`)
 
     // The stack is indexed from the top being 0
     this.stack[this.stack.length - 1 - n] = value
+  }
+
+  nameOfFunctionForIndex (index) {
+    let func = ''
+    let ignores = 0
+    for (let i = 0; i <= index; i++) {
+      const node = this.ast[i]
+      if (node.type === 'functionDefinition') {
+        func = node.name
+      }
+
+      if (
+        node.value === 'check' ||
+        node.value === 'functionDefinition'
+      ) ignores++
+      if (node.value === 'fix') ignores--
+
+      if (node.type === 'keyword' && node.value === 'break') {
+        if (ignores > 0) {
+          ignores--
+          continue
+        }
+        func = ''
+      }
+    }
+    return func
+  }
+
+  assertValidJumpPtr (ptr) {
+    if (this.callStack.length === 0) {
+      // We're not in a function
+      const func = this.nameOfFunctionForIndex(ptr)
+      if (func !== '') {
+        this.croak('Cannot jump into a function')
+      }
+      return
+    }
+
+    const stackTop = this.callStack[this.callStack.length - 1]
+    const myFunc = this.definedFunctions[stackTop.name]
+
+    if (ptr < myFunc.astIndex && ptr > myFunc.endsAt) {
+      this.croak('Cannot jump out of a function')
+    }
+    const other = this.nameOfFunctionForIndex(ptr)
+    if (other !== '' && other !== myFunc.name) {
+      this.croak('Cannot jump to a different function')
+    }
   }
 
   interpretKeyword (k) {
@@ -378,7 +427,17 @@ ${stringFullObject(this.ast[this.insPointer - 1])}`)
         break
       case 'find':
         var id = this.interpretExpression()
-        this.insPointer = this.getIndexOfNthLabel(id)
+        var lblPointer = this.getIndexOfNthLabel(id)
+        // Jumping to termination is always valid
+        if (id !== 0) this.assertValidJumpPtr(lblPointer)
+
+        var myFunc = this.callStack[this.callStack.length - 1].name
+        if (myFunc !== '' && this.nameOfFunctionForIndex(lblPointer) === '') {
+          // Jumping from function to global scope
+          this.callStack = []
+        }
+
+        this.insPointer = lblPointer
         break
       default:
         this.croak(`Unimplemented keyword "${k}"`)
