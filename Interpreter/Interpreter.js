@@ -57,6 +57,8 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
         return -node
       case '!':
         return node === 0 ? 1 : 0
+      case 'paste':
+        return STRATEGIC_SYNTAX_ERROR_TO_REMIND_ME_TO_FINISH_THIS
     }
   }
 

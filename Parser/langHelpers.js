@@ -20,7 +20,8 @@ const binaryOperators = {
 }
 const unaryOperators = {
   turn: '-',
-  switch: '!'
+  switch: '!',
+  paste: 'paste' // Special stack-related "unary operator"
 }
 const operators = Object.keys(binaryOperators).concat(Object.keys(unaryOperators))
 
