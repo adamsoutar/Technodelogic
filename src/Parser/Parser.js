@@ -1,3 +1,4 @@
+const DummyTokenStream = require('./DummyTokenStream')
 const parserHelpers = require('./parserHelpers')
 
 class Parser {
@@ -21,22 +22,68 @@ class Parser {
 
   expectPunctuation (x) {
     if (!this.isNextPunctuation(x)) {
-      this.croak(`Expected punctuation ${x}, got ${this.tokenStream.peek().value}`)
+      this.croak(`Expected punctuation ${x}, got ${JSON.stringify(this.tokenStream.peek())}`)
     }
     this.tokenStream.read()
   }
 
-  parseArgumentList () {
-    const args = []
-    while (!this.isNextPunctuation(')')) {
-      args.push(this.parseExpression(true))
-      // Optional seperators
-      if (this.isNextWord('bring') || this.isNextWord('plug')) {
+  // Parses arguments and function name
+  getFunctionDetails () {
+    const tokenArgs = []
+    let currentArg = []
+    let funcName = ''
+
+    while (true) {
+      currentArg.push(this.tokenStream.read())
+
+      // Next word
+      const nw = this.tokenStream.peek().value
+      if (
+        nw === 'bring' || nw === 'plug'
+      ) {
+        tokenArgs.push(currentArg)
+        currentArg = []
+
         this.tokenStream.read()
       }
+
+      // name
+      const nm = this.tokenStream.peek().rawIdentifier
+      if (nm === 'code' || nm === 'call') break
+
+      funcName = nm
     }
-    this.tokenStream.read()
-    return args
+
+    const callOrCode = this.tokenStream.peek()
+    if (callOrCode.value === 'code') {
+      return {
+        name: funcName,
+        args: tokenArgs.map(tA => {
+          return {
+            type: 'variable',
+            value: tA[0].rawIdentifier
+          }
+        })
+      }
+    } else if (callOrCode.value === 'call') {
+      // Turn the list of arguments (which are each lists of tokens)
+      // into a 1-dimensional list of expressions
+      const args = []
+      for (const tA of tokenArgs) {
+        // tA is a list of raw tokens, we need to turn it into 1 expression
+        const tS = new DummyTokenStream(tA)
+        const temp = this.tokenStream
+        this.tokenStream = tS
+        args.push(this.parseExpression())
+        this.tokenStream = temp
+      }
+      return {
+        name: funcName,
+        args
+      }
+    } else {
+      this.croak("Function arguments must be followed by 'call it' or 'code it'")
+    }
   }
 
   parseAtom (inArgumentList = false) {
@@ -51,12 +98,7 @@ class Parser {
     if (this.isNextWord('use')) {
       // Function definition or call
       this.tokenStream.read()
-      this.expectPunctuation('(')
-      const args = this.parseArgumentList()
-      const name = this.tokenStream.read()
-      if (name.type !== 'variable') {
-        this.croak(`Function name must be a valid identifier, you used:\n${name}`)
-      }
+      const { args, name } = this.getFunctionDetails()
 
       let type = ''
 
@@ -65,26 +107,25 @@ class Parser {
       } else if (this.isNextWord('call')) {
         type = 'functionCall'
       } else {
-        this.croak('Function line ("use it, (args...) name") must be followed by "call it" or "code it"')
+        this.croak('Function line ("use it, args... name") must be followed by "call it" or "code it"')
       }
       this.tokenStream.read()
 
       return {
         type,
         args,
-        name: name.value
+        name
       }
     }
 
     if (this.isNextWord('name')) {
       this.tokenStream.read()
       const varToken = this.tokenStream.read()
-      if (varToken.type !== 'variable') {
-        this.croak(`"name it" must be followed by a variable identifier
-This might be because the value you used ("${varToken.value}") is a reserved keyword`)
-      }
       this.expectNextWord('rename')
-      return varToken
+      return {
+        type: 'variable',
+        value: varToken.rawIdentifier
+      }
     }
 
     const token = this.tokenStream.read()

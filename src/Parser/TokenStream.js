@@ -15,13 +15,6 @@ class TokenStream {
     this.readWhile(langHelpers.isWhitespace)
     if (this.charStream.endOfStream) return null
 
-    if (langHelpers.isPunctuation(this.charStream.peek())) {
-      return {
-        type: 'punctuation',
-        value: this.charStream.read()
-      }
-    }
-
     const word = langHelpers.replaceSynonym(this.getNextWord())
 
     // Filler words like quick- and it
@@ -32,7 +25,8 @@ class TokenStream {
     // Jump-label
     if (word === 'technologic') {
       return {
-        type: 'label'
+        type: 'label',
+        rawIdentifier: word
       }
     }
 
@@ -51,7 +45,8 @@ class TokenStream {
       // Parser will stitch these into numbers
       return {
         type: 'digit',
-        value: langHelpers.digits.indexOf(word)
+        value: langHelpers.digits.indexOf(word),
+        rawIdentifier: word
       }
     }
 
@@ -60,13 +55,15 @@ class TokenStream {
         return {
           type: 'operator',
           binary: true,
-          value: langHelpers.binaryOperators[word]
+          value: langHelpers.binaryOperators[word],
+          rawIdentifier: word
         }
       }
       return {
         type: 'operator',
         binary: false,
-        value: langHelpers.unaryOperators[word]
+        value: langHelpers.unaryOperators[word],
+        rawIdentifier: word
       }
     }
 
@@ -83,13 +80,15 @@ class TokenStream {
 
       return {
         type: 'keyword',
-        value: word
+        value: word,
+        rawIdentifier: word
       }
     }
     if (langHelpers.isExpressionKeyword(word)) {
       return {
         type: 'expressionKeyword',
-        value: word
+        value: word,
+        rawIdentifier: word
       }
     }
 
@@ -98,7 +97,8 @@ class TokenStream {
     // char stream are variable names, not syntax errors
     return {
       type: 'variable',
-      value: word
+      value: word,
+      rawIdentifier: word
     }
   }
 

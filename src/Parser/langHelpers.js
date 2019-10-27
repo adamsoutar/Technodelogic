@@ -2,7 +2,6 @@ const letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUV'
 const numbers = '0123456789'
 const identifierChars = letters.concat(numbers)
 const meaningless = ['it', 'quick', 'mail']
-const punctuation = '()'.split('')
 
 const digits = ['erase', 'click', 'watch', 'view', 'work', 'surf', 'update', 'upgrade', 'zoom', 'fill', 'point']
 
@@ -64,8 +63,7 @@ module.exports = {
   unaryOperators,
   isWhitespace: (x) => ' \r\n\t,-'.includes(x),
   isIdentifier: (x) => identifierChars.includes(x),
-
-  isPunctuation: (w) => punctuation.includes(w),
+  
   isWordMeaningless: (w) => meaningless.includes(w),
   isOperator: (w) => operators.includes(w),
   isDigit: (w) => digits.includes(w),

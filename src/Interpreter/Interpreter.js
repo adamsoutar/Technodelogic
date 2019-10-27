@@ -387,15 +387,15 @@ ${stringFullObject(this.ast[this.insPointer - 1])}`)
         break
       case 'write':
         var vr1 = this.getNextNode()
-        this.setVariable(vr1.value, this.interpretExpression())
+        this.setVariable(vr1.rawIdentifier, this.interpretExpression())
         break
       case 'scan':
         var vr2 = this.getNextNode()
-        this.setVariable(vr2.value, this.readLine())
+        this.setVariable(vr2.rawIdentifier, this.readLine())
         break
       case 'press':
         var vr3 = this.getNextNode()
-        this.setVariable(vr3.value, this.readLine().charCodeAt(0))
+        this.setVariable(vr3.rawIdentifier, this.readLine().charCodeAt(0))
         break
       case 'burn':
         this.insPointer = this.ast.length
