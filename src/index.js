@@ -1,11 +1,9 @@
 // TODO: Require the rhythm
+const fs = require('fs')
 const interpreter = require('./Interpreter')
-const interpreterInstance = interpreter.fromString(`
-  use it buy it bring it pay it bring it add code it
-    name it buy it rename it touch name it pay it rename it unlock it
-  break it
 
-  use it click plug it watch plug it add call it
-  send scroll
-`)
+// TODO: Better loading
+const interpreterInstance = interpreter.fromString(
+  fs.readFileSync(process.argv[2], 'utf8')
+)
 interpreterInstance.runToEnd()
