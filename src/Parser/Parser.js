@@ -152,13 +152,11 @@ class Parser {
       token.type === 'keyword' &&
       parserHelpers.isVarSetter(token.value)
     ) {
-      const obj2 = {
+      return {
         ...token,
         // Read the raw identifier
         sets: this.tokenStream.read().rawIdentifier
       }
-      console.log(obj2)
-      return obj2
     }
 
     // The keyword AST node for these is the token verbatum
