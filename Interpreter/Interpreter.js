@@ -237,12 +237,13 @@ ${JSON.stringify(this.ast[this.insPointer], null, 2)}`)
       case 'check': // The if statement kind
         var cond = this.interpretExpression()
         if (cond === 0) {
-          this.insPointer = this.getIndexOfNextBreak(true)
+          this.insPointer = this.getIndexOfNextBreak(true) + 1
         }
         break
       case 'fix':
-        // I don't *think* this needs any real implementation other than to
-        // not trip on the keyword and treat it like a regular if
+        // We ran into an else case from the body of an if,
+        // skip over the case
+        this.insPointer = this.getIndexOfNextBreak(false) + 1
         break
       case 'lock':
         // While loop

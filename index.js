@@ -1,7 +1,14 @@
 // TODO: Require the rhythm
 const interpreter = require('./Interpreter')
 const interpreterInstance = interpreter.fromString(`
-  zip view touch watch unzip turn send scroll
+  view save,
+  watch touch fax it,
+  send it
+
+  pause it
+    Should print 5, if expression
+    keywords are implemented
+  play it
 
   technologic
 `)
